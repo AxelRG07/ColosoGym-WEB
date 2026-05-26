@@ -6,7 +6,7 @@ class Cliente(models.Model):
         ('Inactivo', 'Inactivo'),
     ]
 
-    codigo_barra = models.CharField(max_length=50, unique=True, blank=True)
+    codigo_barra = models.CharField(primary_key=True, max_length=20, unique=True, blank=True)
     nombre_completo = models.CharField(max_length=150)
     telefono_emergencia = models.CharField(max_length=20)
     notas_medicas = models.TextField(null=True, blank=True)
@@ -15,10 +15,14 @@ class Cliente(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.codigo_barra:
-            ultimo_cliente = Cliente.objects.order_by('-id').first()
+            ultimo_cliente = Cliente.objects.order_by('-codigo_barra').first()
 
-            if ultimo_cliente:
-                siguiente_numero = ultimo_cliente.id + 1
+            if ultimo_cliente and ultimo_cliente.codigo_barra:
+                try:
+                    ultimo_numero = int(ultimo_cliente.codigo_barra.split('-')[1])
+                    siguiente_numero = ultimo_numero + 1
+                except (IndexError, ValueError):
+                    siguiente_numero = 1
             else:
                 siguiente_numero = 1
 
