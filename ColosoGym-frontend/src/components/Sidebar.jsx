@@ -5,7 +5,7 @@ import { Outlet, Link, NavLink } from 'react-router-dom';
 
 export default function Sidebar() {
     return (
-        <aside className='flex flex-col items-center w-60 justify-start gap-7 h-full border-r-2 border-gray-500'>
+        <aside className='flex flex-col items-center w-70 justify-start gap-7 h-full border-r-2 border-gray-500'>
 
             <div className="p-3 w-full">
                 <h1 className="text-2xl text-white font-bold flex flex-row gap-3 items-center"><span><TfiUser /></span>Coloso</h1>
