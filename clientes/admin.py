@@ -6,4 +6,8 @@ from clientes.models import *
 admin.site.register(Cliente)
 admin.site.register(PlanSuscripcion)
 admin.site.register(Membresiacliente)
+admin.site.register(Productos)
+admin.site.register(Ventas)
+admin.site.register(DetalleVenta)
+admin.site.register(Asistencias)
 

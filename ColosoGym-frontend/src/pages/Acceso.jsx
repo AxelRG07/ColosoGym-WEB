@@ -3,7 +3,7 @@ import {MdAdfScanner} from "react-icons/md";
 
 export default function Acceso() {
     const [busqueda, setBusqueda] = useState('');
-    const [statusAcceso, setStatusAcceso] = useState(null); // 'autorizado', 'vencido', 'no_existe'
+    const [statusAcceso, setStatusAcceso] = useState(null);
     const [clienteActual, setClienteActual] = useState(null);
     const [planes, setPlanes] = useState([]);
     const [planSeleccionado, setPlanSeleccionado] = useState('');
@@ -14,12 +14,50 @@ export default function Acceso() {
             .then(data => setPlanes(data))
     };
 
-    useEffect(() => {
+    const [asistencias, setAsistencias] = useState([]);
+
+    const cargarAsistencias = async () => {
+        try {
+            const res = await fetch("http://localhost:8000/api/asistencias/");
+
+            if (!res.ok) {
+                throw new Error("Error al obtener el historial");
+            }
+
+            const data = await res.json();
+
+            setAsistencias(data);
+
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    useEffect( () => {
         cargarPlanes()
+        cargarAsistencias()
     }, []);
 
     const planElegido = planes.find((p) => p.id === parseInt(planSeleccionado));
     const montoAPagar = planElegido ? planElegido.precio : 0;
+
+    const registrarAsistencia = async (codigoCliente, concedido) => {
+        try {
+            await fetch("http://localhost:8000/api/asistencias/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    cliente: codigoCliente,
+                    acceso_concedido: concedido
+                }),
+            });
+            await cargarAsistencias()
+        } catch (error) {
+            console.error("Error al guardar el registro de asistencia:", error);
+        }
+    };
 
     const verificarAcceso = () => {
         if (!busqueda.trim()) return;
@@ -39,8 +77,10 @@ export default function Acceso() {
 
                     if (clienteEncontrado.estado === 'Activo') {
                         setStatusAcceso('autorizado');
+                        registrarAsistencia(clienteEncontrado.codigo_barra, true);
                     } else {
                         setStatusAcceso('vencido');
+                        registrarAsistencia(clienteEncontrado.codigo_barra, false);
                     }
                 }
                 setBusqueda('');
@@ -135,7 +175,7 @@ export default function Acceso() {
                     placeholder="ID del miembro o nombre..."
                     value={busqueda}
                     onChange={e => setBusqueda(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && verificarAcceso()} // Permite buscar con Enter
+                    onKeyDown={e => e.key === 'Enter' && verificarAcceso()}
                 />
 
                 <div className="flex items-center gap-2">
@@ -243,12 +283,30 @@ export default function Acceso() {
                 </div>
             )}
 
-            <div className="p-4 border border-dashed border-gray-600 mt-4">
-                {statusAcceso === null && <p className="text-gray-500">Esperando escaneo...</p>}
-            </div>
-
-            <div>
+            <div className="bg-[#171717] flex flex-col gap-3 border p-4 border-gray-500 rounded-md">
                 <h3 className="font-bold">REGISTROS RECIENTES</h3>
+                {asistencias.map(asistencia => (
+                    <div
+                        key={asistencia.id}
+                        className="bg-[#292929] flex flex-col gap-1 border-l-4 p-3 border-gray-600 rounded-md shadow-sm"
+                        style={{
+                            borderLeftColor: asistencia.acceso_concedido ? '#22c55e' : '#ef4444'
+                        }}
+                    >
+                        <p className="text-white font-bold">
+                            Socio: {asistencia.cliente} - {asistencia.nombre_cliente}
+                        </p>
+
+                        <div className="flex justify-between text-sm">
+                <span className={asistencia.acceso_concedido ? "text-green-500" : "text-red-500"}>
+                    {asistencia.acceso_concedido ? "✅ Autorizado" : "❌ Denegado"}
+                </span>
+                <span className="text-gray-400">
+                    {new Date(asistencia.fecha_hora).toLocaleTimeString()}
+                </span>
+                        </div>
+                    </div>
+                ))}
             </div>
         </main>
     );

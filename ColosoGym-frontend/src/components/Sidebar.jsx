@@ -27,8 +27,8 @@ export default function Sidebar() {
                     <span><TfiFaceSmile /></span>Registro</NavLink>
 
                 <NavLink className="flex flex-row gap-3 items-center hover:bg-[#2a0809] hover:cursor-pointer text-gray-400 p-3
-                transition-all duration-300 ease-in-out" to="/inventario">
-                    <span><TfiLayers /></span>Inventario</NavLink>
+                transition-all duration-300 ease-in-out" to="/productos">
+                    <span><TfiLayers /></span>Punto de venta</NavLink>
 
                 <NavLink className="flex flex-row gap-3 items-center hover:bg-[#2a0809] hover:cursor-pointer text-gray-400 p-3
                 transition-all duration-300 ease-in-out" to="/reportes">

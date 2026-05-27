@@ -67,3 +67,42 @@ class Membresiacliente(models.Model):
 
     def __str__(self):
         return self.cliente.nombre_completo + ' - ' + self.plan_suscripcion.nombre_plan
+
+class Asistencias(models.Model):
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+    fecha_hora = models.DateTimeField(auto_now_add=True)
+    acceso_concedido = models.BooleanField()
+
+    def __str__(self):
+        return self.cliente.nombre_completo + ' - ' + self.fecha_hora.__str__()
+
+class Productos(models.Model):
+    nombre_producto = models.CharField(max_length=50)
+    precio_venta = models.DecimalField(max_digits=10, decimal_places=2)
+    stock = models.IntegerField()
+    stock_minimo = models.IntegerField()
+
+    def __str__(self):
+        return self.nombre_producto
+
+class Ventas(models.Model):
+    PAGO_CHOICES = [
+        ('Efectivo', 'Efectivo'),
+        ('Tarjeta', 'Tarjeta'),
+    ]
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+    metodo_pago = models.CharField(max_length=15, choices=PAGO_CHOICES, default='Efectivo')
+    fecha_hora = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.metodo_pago + ' - ' + self.fecha_hora.__str__()
+
+class DetalleVenta(models.Model):
+    venta = models.ForeignKey(Ventas, on_delete=models.CASCADE, related_name='detalles')
+    producto = models.ForeignKey(Productos, on_delete=models.CASCADE)
+    cantidad = models.IntegerField()
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return self.producto.nombre_producto + ' - ' + self.venta.fecha_hora.__str__()
