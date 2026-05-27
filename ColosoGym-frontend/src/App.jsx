@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import Registros from "./pages/Registros.jsx";
 import Acceso from "./pages/Acceso.jsx";
 import PuntoVenta from "./pages/PuntoVenta.jsx";
+import Reportes from "./pages/Reportes.jsx";
 
 function App() {
 
@@ -17,6 +18,7 @@ function App() {
                 <Route path="registro" element={<Registros />} />
                 <Route path="acceso" element={<Acceso />} />
                 <Route path="productos" element={<PuntoVenta />} />
+                <Route path="reportes" element={<Reportes />} />
               </Route>
           </Routes>
       </BrowserRouter>

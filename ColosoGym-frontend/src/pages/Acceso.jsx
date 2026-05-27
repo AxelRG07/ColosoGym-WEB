@@ -231,7 +231,7 @@ export default function Acceso() {
 
                         <div className="bg-black p-6 rounded border border-gray-700 my-2">
                             <label className="text-gray-400 text-sm font-bold mb-2 block">
-                                RENOVACIÓN EXPRESS
+                                RENOVACIÓN
                             </label>
 
                             <select
