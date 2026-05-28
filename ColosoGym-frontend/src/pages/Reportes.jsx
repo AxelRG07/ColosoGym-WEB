@@ -7,7 +7,7 @@ import {
     YAxis,
     Tooltip,
     CartesianGrid,
-    LineChart, Line,
+    LineChart, Line, Legend,
 } from 'recharts';
 import {toPng} from 'html-to-image';
 import jsPDF from "jspdf";
@@ -19,6 +19,7 @@ export default function Reportes() {
     const [reporteVentas, setReporteVentas] = useState(null);
     const reportRef = useRef(null);
     const [topProductos, setTopProductos] = useState([]);
+    const [inventario, setInventario] = useState([]);
 
     const obtenerReporte = async () => {
         try {
@@ -33,6 +34,27 @@ export default function Reportes() {
             }
         } catch (error) {
             console.error("Error de conexión:", error);
+        }
+    };
+
+    const obtenerEstadoInventario = async () => {
+        try {
+            const response = await fetch("http://localhost:8000/api/productos/estado_inventario/");
+            const data = await response.json();
+
+            if (response.ok) {
+                const datosLimpios = data.map(item => ({
+                    ...item,
+                    stock_actual: Number(item.stock_actual),
+                    stock_minimo: Number(item.stock_minimo)
+                }));
+                setInventario(datosLimpios);
+            } else {
+                console.error("Error al cargar el inventario");
+                setInventario([]);
+            }
+        } catch (error) {
+            console.error("Error de conexión en inventario:", error);
         }
     };
 
@@ -59,6 +81,7 @@ export default function Reportes() {
 
     useEffect(() => {
         obtenerReporte();
+        obtenerEstadoInventario()
     }, [fecha]);
 
     useEffect(() => {
@@ -235,6 +258,66 @@ export default function Reportes() {
                                 <p className="text-gray-500 font-bold text-lg animate-pulse">Cargando...</p>
                             </div>
                         )}
+
+                        <div className="w-full flex flex-col gap-4 bg-[#111] p-6 rounded-xl">
+                            <h1>Estado del Inventario (Stock vs Mínimo)</h1>
+
+                            {inventario && inventario.length > 0 ? (
+                                <BarChart
+                                    width={1000}
+                                    height={400}
+                                    data={inventario}
+                                    margin={{top: 20, right: 30, left: 20, bottom: 100}}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false}/>
+
+                                    <XAxis
+                                        dataKey="producto"
+                                        stroke="#9ca3af"
+                                        interval={0}
+                                        angle={-45}
+                                        textAnchor="end"
+                                        height={90}
+                                        tick={{fill: '#9ca3af', fontSize: 12}}
+                                    />
+                                    <YAxis stroke="#9ca3af" tick={{fill: '#9ca3af'}}/>
+
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: '#222',
+                                            borderColor: '#444',
+                                            borderRadius: '8px'
+                                        }}
+                                        itemStyle={{color: '#fff', fontWeight: 'bold'}}
+                                    />
+
+                                    <Bar
+                                        dataKey="stock_actual"
+                                        name="Stock Actual"
+                                        fill="#3b82f6"
+                                        radius={[4, 4, 0, 0]}
+                                    />
+
+                                    <Bar
+                                        dataKey="stock_minimo"
+                                        name="Stock Mínimo"
+                                        fill="#f59e0b"
+                                        radius={[4, 4, 0, 0]}
+                                    />
+                                    <Legend
+                                        verticalAlign="top"
+                                        align="center"
+                                        wrapperStyle={{paddingBottom: '20px'}}
+                                    />
+
+                                </BarChart>
+                            ) : (
+                                <div className="flex justify-center py-20">
+                                    <p className="text-gray-500 font-bold text-lg animate-pulse">Cargando
+                                        inventario...</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             ) : (

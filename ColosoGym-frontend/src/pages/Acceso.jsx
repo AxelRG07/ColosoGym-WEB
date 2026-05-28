@@ -1,18 +1,14 @@
 import React, {useEffect, useState} from 'react';
 import {MdAdfScanner} from "react-icons/md";
+import ModalMembresia from "../components/suscripciones/ModalMembresia.jsx";
 
 export default function Acceso() {
     const [busqueda, setBusqueda] = useState('');
     const [statusAcceso, setStatusAcceso] = useState(null);
     const [clienteActual, setClienteActual] = useState(null);
-    const [planes, setPlanes] = useState([]);
-    const [planSeleccionado, setPlanSeleccionado] = useState('');
+    const [btnVerificar, setBtnVerificar] = useState(false);
 
-    const cargarPlanes = () => {
-        fetch("http://localhost:8000/api/planes/")
-            .then(res => res.json())
-            .then(data => setPlanes(data))
-    };
+    const [resultados, setResultados] = useState([]);
 
     const [asistencias, setAsistencias] = useState([]);
 
@@ -33,13 +29,10 @@ export default function Acceso() {
         }
     };
 
-    useEffect( () => {
-        cargarPlanes()
+    useEffect(() => {
         cargarAsistencias()
     }, []);
 
-    const planElegido = planes.find((p) => p.id === parseInt(planSeleccionado));
-    const montoAPagar = planElegido ? planElegido.precio : 0;
 
     const registrarAsistencia = async (codigoCliente, concedido) => {
         try {
@@ -83,6 +76,7 @@ export default function Acceso() {
                         registrarAsistencia(clienteEncontrado.codigo_barra, false);
                     }
                 }
+                setBtnVerificar(false)
                 setBusqueda('');
             })
             .catch(err => {
@@ -92,69 +86,39 @@ export default function Acceso() {
             });
     };
 
-    const procesarPago = async () => {
-        const fechaInicio = new Date();
-
-        const fechaFin = new Date();
-        fechaFin.setDate(fechaInicio.getDate() + planElegido.duracion_dias);
-
-        const strFechaInicio = fechaInicio.toISOString().split('T')[0];
-        const strFechaFin = fechaFin.toISOString().split('T')[0];
-
-        const datosMembresia = {
-            cliente: clienteActual.codigo_barra,
-            plan_suscripcion: planElegido.id,
-            fecha_inicio: strFechaInicio,
-            fecha_fin: strFechaFin,
-            monto_pagado: montoAPagar,
-            estado_membresia: 'Vigente'
-        }
-
-        const datosCliente = {estado: 'Activo'};
+    const buscarClientes = async () => {
+        if (!busqueda.trim()) return;
 
         try {
-            const resMembresia = await fetch("http://localhost:8000/api/membresias/", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(datosMembresia),
-            });
+            // Ajusta la URL según cómo maneje DRF tus búsquedas
+            const response = await fetch(`http://localhost:8000/api/clientes/?search=${busqueda}`);
 
-            if (!resMembresia.ok) {
-                const detallesError = await resMembresia.json();
-                console.error(planElegido);
-                console.error("Django dice que el error está en:", detallesError);
-                throw new Error("Error al renovar la membresía");
+            if (response.ok) {
+                const data = await response.json();
+                // Tomamos solo los primeros 10 resultados por seguridad
+                const top10 = data.slice(0, 10);
+
+                setResultados(top10);
+
+                // Si no hay resultados, avisamos
+                if (top10.length === 0) {
+                    alert("No se encontraron clientes con ese nombre o ID.");
+                }
             }
-
-            const resCliente = await fetch(`http://localhost:8000/api/clientes/${clienteActual.codigo_barra}/`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(datosCliente),
-            });
-
-            if (!resCliente.ok) {
-                throw new Error("Error al actualizar cliente");
-            }
-
-            setStatusAcceso('renovado');
-            setPlanSeleccionado(null);
-            setBusqueda('')
-
-
         } catch (error) {
-            console.error("Error en la transacción:", error);
-            alert("Hubo un problema procesando el pago. Intenta de nuevo.");
+            console.error("Error al buscar clientes:", error);
         }
     };
 
-    const limpiarPantalla = () => {
-        setBusqueda('');
-        setStatusAcceso(null);
-        setClienteActual(null);
+    const handleSeleccion = (e) => {
+        const idSeleccionado = e.target.value;
+        const cliente = resultados.find(c => c.codigo_barra.toString() === idSeleccionado);
+
+        if (cliente) {
+            setBtnVerificar(true)
+            setBusqueda(`${cliente.codigo_barra} - ${cliente.nombre_completo}`); // O puedes poner cliente.nombre_completo según prefieras
+            setResultados([]);
+        }
     };
 
     return (
@@ -174,23 +138,52 @@ export default function Acceso() {
                     type="text"
                     placeholder="ID del miembro o nombre..."
                     value={busqueda}
-                    onChange={e => setBusqueda(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && verificarAcceso()}
+                    onChange={e => {
+                        setBusqueda(e.target.value);
+                        setClienteSeleccionado(null);
+                        setBtnVerificar(false)
+                    }
+                    }
+                    onKeyDown={e => e.key === 'Enter' && buscarClientes()}
                 />
 
+                {resultados.length > 0 && (
+                    <div className="mb-4">
+                        <label className="text-gray-400 text-xs mb-1 block">Selecciona el cliente correcto:</label>
+                        <select
+                            onChange={
+                                handleSeleccion
+                            }
+                            className="w-full p-2 rounded bg-gray-900 text-white border border-gray-700 outline-none focus:border-blue-500"
+                            defaultValue=""
+                        >
+                            <option value="" disabled>-- Selecciona un cliente ({resultados.length} encontrados) --
+                            </option>
+                            {resultados.map(cliente => (
+                                <option key={cliente.codigo_barra} value={cliente.codigo_barra}>
+                                    {cliente.nombre_completo} - ID: {cliente.codigo_barra}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={verificarAcceso}
-                        className="bg-red-800 hover:bg-red-700 text-white font-bold p-2 rounded-md transition-colors"
-                    >
-                        VERIFICAR ACCESO
-                    </button>
+                    {btnVerificar && (
+                        <button
+                            onClick={verificarAcceso}
+                            className="bg-red-800 hover:bg-red-700 text-white font-bold p-2 rounded-md transition-colors"
+                        >
+                            VERIFICAR ACCESO
+                        </button>
+                    )}
 
                     <button
-                        onClick={limpiarPantalla}
-                        className="bg-gray-700 hover:bg-gray-600 text-white font-bold p-2 rounded-md transition-colors"
+                        onClick={buscarClientes}
+                        disabled={busqueda.length === 0}
+                        className="bg-gray-700 hover:bg-gray-600 text-white font-bold disabled disabled:opacity-50 disabled:cursor-not-allowed p-2 rounded-md transition-colors"
                     >
-                        LIMPIAR
+                        BUSCAR
                     </button>
                 </div>
             </div>
@@ -222,58 +215,34 @@ export default function Acceso() {
             )}
 
             {statusAcceso === 'vencido' && (
-                <div className="fixed inset-0 bg-black/80 z-50 flex justify-center items-center p-4">
-                    <div
-                        className="bg-[#171717] border-2 border-red-800 p-8 rounded-lg flex flex-col gap-4 max-w-md w-full text-center shadow-[0_0_15px_rgba(153,27,27,0.5)]">
-                        <h2 className="text-3xl font-bold text-red-600">🔴 ACCESO DENEGADO</h2>
-                        <p className="text-2xl text-white font-bold">{clienteActual?.nombre_completo}</p>
-                        <p className="text-red-400">La membresía de este socio se encuentra inactiva.</p>
-
-                        <div className="bg-black p-6 rounded border border-gray-700 my-2">
-                            <label className="text-gray-400 text-sm font-bold mb-2 block">
-                                RENOVACIÓN
-                            </label>
-
-                            <select
-                                value={planSeleccionado}
-                                onChange={(e) => setPlanSeleccionado(e.target.value)}
-                                className="w-full p-2 mb-4 rounded bg-gray-800 text-white border border-gray-600 focus:border-red-500 outline-none">
-                                <option value="">-- Selecciona un plan --</option>
-                                {planes.map((plan) => (
-                                    <option key={plan.id} value={plan.id}>
-                                        {plan.nombre_plan} - ${plan.precio}
-                                    </option>
-                                ))}
-                            </select>
-
-                            <div
-                                className="flex justify-between items-center bg-gray-900 p-3 rounded mt-2 border border-gray-600">
-                                <span className="text-gray-400 font-bold">Total a cobrar:</span>
-                                <span className="text-2xl text-green-500 font-bold">${montoAPagar}</span>
-                            </div>
-
-                            <button onClick={procesarPago}
-                                    className="bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-4 rounded w-full mt-4 transition-colors">
-                                Procesar Pago y Reactivar
-                            </button>
-                        </div>
-
-                        <div className="flex justify-center mt-2">
-                            <button
-                                onClick={() => setStatusAcceso(null)}
-                                className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-8 rounded-md transition-colors w-full"
-                            >
-                                CERRAR
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <ModalMembresia
+                    cliente={clienteActual}
+                    modo="acceso"
+                    onClose={() => setStatusAcceso(null)}
+                    onSuccess={() => {
+                        setStatusAcceso('renovado');
+                        setBusqueda('');
+                    }}
+                />
             )}
 
             {statusAcceso === 'no_existe' && (
                 <div
                     className="fixed inset-0 bg-black/80 z-50 flex flex-col gap-3 justify-center items-center font-bold">
                     🟡 SOCIO NO ENCONTRADO
+                    <button className="bg-red-900 hover:cursor-pointer text-white font-bold px-8 py-2 rounded-md "
+                            onClick={() => {
+                                setStatusAcceso(null)
+                            }}
+                    >Aceptar
+                    </button>
+                </div>
+            )}
+
+            {statusAcceso === 'error' && (
+                <div
+                    className="fixed inset-0 bg-black/80 z-50 flex flex-col gap-3 justify-center items-center font-bold">
+                    🟡 Ha ocurrido un error, intentalo de nuevo.
                     <button className="bg-red-900 hover:cursor-pointer text-white font-bold px-8 py-2 rounded-md "
                             onClick={() => {
                                 setStatusAcceso(null)
@@ -301,7 +270,7 @@ export default function Acceso() {
                 <span className={asistencia.acceso_concedido ? "text-green-500" : "text-red-500"}>
                     {asistencia.acceso_concedido ? "✅ Autorizado" : "❌ Denegado"}
                 </span>
-                <span className="text-gray-400">
+                            <span className="text-gray-400">
                     {new Date(asistencia.fecha_hora).toLocaleTimeString()}
                 </span>
                         </div>

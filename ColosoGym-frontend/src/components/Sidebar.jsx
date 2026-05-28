@@ -14,9 +14,6 @@ export default function Sidebar() {
 
 
             <nav className="flex flex-col gap-5 w-full">
-                <NavLink className="flex flex-row gap-3 items-center hover:bg-[#2a0809] hover:cursor-pointer text-gray-400 p-3
-                transition-all duration-300 ease-in-out" to="/dashboard">
-                    <span><TfiAgenda /></span>Dashboard</NavLink>
 
                 <NavLink className="flex flex-row gap-3 items-center hover:bg-[#2a0809] hover:cursor-pointer text-gray-400 p-3
                 transition-all duration-300 ease-in-out" to="/acceso">

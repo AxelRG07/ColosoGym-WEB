@@ -30,6 +30,21 @@ class ProductosViewSet(viewsets.ModelViewSet):
     queryset = Productos.objects.all()
     serializer_class = ProductosSerializer
 
+    @action(detail=False, methods=['get'])
+    def estado_inventario(self, request):
+        productos = Productos.objects.all()
+
+        datos = [
+            {
+                "producto": p.nombre_producto,
+                "stock_actual": p.stock,
+                "stock_minimo": p.stock_minimo
+            }
+            for p in productos
+        ]
+
+        return Response(datos)
+
 
 class VentasViewSet(viewsets.ModelViewSet):
     queryset = Ventas.objects.all().order_by('-fecha_hora')

@@ -12,7 +12,7 @@ class Cliente(models.Model):
     nombre_completo = models.CharField(max_length=150)
     telefono_emergencia = models.CharField(max_length=20)
     notas_medicas = models.TextField(null=True, blank=True)
-    estado = models.CharField(max_length=15, choices=ESTADOS_CHOICES, default='Activo')
+    estado = models.CharField(max_length=15, choices=ESTADOS_CHOICES, default='Inactivo')
     fecha_registro = models.DateField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
